@@ -1,47 +1,25 @@
-# Arduino Client for MQTT
+﻿# Arduino Client for MQTT
 
 This library provides a client for doing simple publish/subscribe messaging with
 a server that supports MQTT.
-
-## Examples
-
-The library comes with a number of example sketches. See File > Examples > PubSubClient
-within the Arduino application.
-
 Full API documentation is available here: http://pubsubclient.knolleary.net
 
-## Limitations
+#Actualizaciones sobre la versión original de Nicholas O'Leary
+http://knolleary.net/arduino-client-for-mqtt/
 
- - It can only publish QoS 0 messages. It can subscribe at QoS 0 or QoS 1.
- - The maximum message size, including header, is **128 bytes** by default. This
-   is configurable via `MQTT_MAX_PACKET_SIZE` in `PubSubClient.h`.
- - The keepalive interval is set to 15 seconds by default. This is configurable
-   via `MQTT_KEEPALIVE` in `PubSubClient.h`.
- - The client uses MQTT 3.1.1 by default. It can be changed to use MQTT 3.1 by
-   changing value of `MQTT_VERSION` in `PubSubClient.h`.
+Implementación de la conexión con clean Session=0.
 
+El principal motivo por el que no se implementa en esta librería el Clean Session = 0 es porque el cliente no tiene forma de almacenar temporalmente aquellos paquetes enviados con QOS >0 que no han sido entregados al servidor.
+Según la especificación del protocolo un cliente que inicie una sesión persistente debe de ser capaz de almacenar los paquetes no entregados.
 
-## Compatible Hardware
+Sin embargo, hay una situación especial como la que se describe en este issue https://github.com/knolleary/pubsubclient/issues/86, un dispositivo con una conexión de red poco fiable en la que se asuma que en los momentos de desconexión los paquetes que envia el dispositivo se pueden perder
+pero que queramos poder asegurar que las actualizaciones que envia el servidor van a llegar al dispositivo. 
 
-The library uses the Arduino Ethernet Client api for interacting with the
-underlying network hardware. This means it Just Works with a growing number of
-boards and shields, including:
+las funciones de conexión ahora devuelven un int, porque hay varios estados posibles. Según  la especificación del protocolo MQTT3.1.1 cuando se establece una sesión con clean session=0 el broker en el paquete CONNACK informa al cliente si la sesión existe en el servidor. 
 
- - Arduino Ethernet
- - Arduino Ethernet Shield
- - Arduino YUN – use the included `YunClient` in place of `EthernetClient`, and
-   be sure to do a `Bridge.begin()` first
- - Arduino WiFi Shield - if you want to send packets > 90 bytes with this shield,
-   enable the `MQTT_MAX_TRANSFER_SIZE` define in `PubSubClient.h`.
- - Sparkfun WiFly Shield – [library](https://github.com/dpslwk/WiFly)
- - TI CC3000 WiFi - [library](https://github.com/sparkfun/SFE_CC3000_Library)
- - Intel Galileo/Edison
- - ESP8266
+Si se inicia una conexión con Clean Session=0 (se ha añadido un último parámetro booleano a la función original) si la función devuelve 0x00 significa que ha conectado correctamente, pero que no hay sesión preexistente en el servidor, por lo que hay que suscribirse de nuevo a los topics.
+Si la función devuleve -1, significa que hay sesión en el servidor y no es necesario suscribirse a los topics de nuevo.
 
-The library cannot currently be used with hardware based on the ENC28J60 chip –
-such as the Nanode or the Nuelectronics Ethernet Shield. For those, there is an
-[alternative library](https://github.com/njh/NanodeMQTT) available.
+para las suscipciones con qos>0 en el momento de la conexión se recibirán las actualizaciones enviadas con qos>0 mientras el dispositivo no estaba conectado.
+ 
 
-## License
-
-This code is released under the MIT License.
